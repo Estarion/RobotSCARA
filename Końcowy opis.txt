@@ -1,0 +1,133 @@
+﻿Projekt realizowany w ramach kursu Akademii C#
+Ilość osób biorących udział w projekcie: 1
+Twórca:  Michał Sawoniuk
+link do filmiku na YouTube: https://www.youtube.com/watch?v=RjGroqYPKN4&feature=youtu.be
+Przepraszam za słabą jakość nagrywania.  Mam nadzieje że ten opis wystarczy. Czasami też wymóg żeby twórcy opisali gre nie jest dobrym pomysłem.
+Dołączam też samą gre jak i plik z grą.
+--------------------------------------------------------------------------------------------------------------------------------------
+Witam!
+Projekt został zrobiony za pomocą technologii Unity z tego względu chciałbym najpierw przedstawić krótką koncepcje panującą tam.
+Prawie każdy element w Unity jest stworzony za pomocą klasy GameObject (jest to obiekt w Unity).
+Do tych obiektów można dołączyć skrypt(klasę) jako komponent ,który ma za zadnie rządzić danym obiektem lub obiektami połączonymi (dodanymi do tego obiektu lub skryptu) jak
+np. synem lub ojcem danego obiektu w hierarchii drzewa.
+Z tego względu do metody w danej klasie przesyła się albo obiekt klasy GameObject nad którym chcemy pracować lub jeden z jego komponentów np. skrypt.
+Należy pamiętać ,że słowo "this" odnosi się do obiektu a nie skryptu dołączonego jako komponent.
+Ważna informacja od Unity : "MonoBehaviour is the base class from which every Unity script derives. When you use C#, you must explicitly derive from MonoBehaviour."
+
+Przed rozpoczęciem sprawdzania polecam otworzyć za pomocą środowiska Unity folder który jest dołaczony do repozytorium,  obejrzeć filmik i otworzyć jakikolwiek 
+skrypt z folderu Assets/Scripts. Ułatwi to poruszanie sie po klasach i grze.  
+
+Przechodząc do konkretów.
+Moim projektem było stworzenie prostej gry typu strategia, ekonomia, akcja. Z tego powodu zaprezentuje tu ogólnikowo zasadę działania programu.
+
+Plansza gry jest stworzona z pól(field) oznaczające miasta ,które bohater zdobywa pokonując kolejnych przeciwników broniących dane pole.
+Jednak aby wygrać musi jedynie zdobyć ostatnie pole najbardziej położone na prawo (za zwycięstwo odpowiada skrypt "EndGameScriptForFinalField").
+Na planszy są umieszczone jeszcze dodatkowe pola ,które gracz nie musi zdobywać ale mogą wspomóc gracza w rozgrywce.
+Po najechaniu na dane pole przestrzeń pod nią (Background (dziecko Field)) zaczyna się świecić (ułatwi lokalizacje myszy użytkownika a także informuje jakie pole zostało uaktywnione).
+Odpowiada za to i kilka innych rzeczy klasa "BackgroundOfFieldScript".
+W background jest jeszcze komponent(skrypt) "BarracsInField" która odpowiada za dodanie na początku sceny "MainProject" do obiektu kart przeciwników jako dzieci background.
+W ten sposób jeśli gracz nie wygra walki o pole ,to w tym polu (w background) nadal pozostają te same karty. Gracz dzięki temu może się przygotować do kolejnej walki o to samo pole więdząc
+jaki jest już tam skład drużyny.
+
+Po naciśnięciu pola (field) wyskakuje nam okno dialogowe (odpowiada za to skrypt "TestModalPanel") na ,którym mamy przedstawione informacje dotyczące ile surowców dane pole generuje
+oraz guziki.
+
+Chciałbym sie tu zatrzymać i przedstawić ten kawałek kodu który często sie pojawia ale w nieco innych formach.
+
+private static ModalPanel modalPanel;
+public static ModalPanel Instance()
+{
+if (!modalPanel)
+{
+modalPanel = FindObjectOfType(typeof(ModalPanel)) as ModalPanel;
+if (!modalPanel)
+Debug.LogError("There needs to be one active ModalPanel script on a GameObject in your scene.");
+}
+
+return modalPanel;
+}
+
+Jak widać użyłem tu słowa static. Co oznacza że jeśli się użyje "modalPanel = ModalPanel.Instance();" to do modalPanel zostanie wysłany ten jedyny skrypt a co ważniejsze mamy dzięki temu dostęp też do
+obiektu klasy GameObject ,który został podany do skryptu jako zmienna. Dzięki temu możemy działać nie tylko na skrypcie ale też i na obiekcie który ma zazwyczaj zmienne (inne obiekty) i tak dalej.
+Ten obiekt jest jakby "statkiem matką" (ma pełno elementów) z którego będziemy wybierać obiekty ,które nas interesują. Jest to bardzo korzystne ,gdyż jeśli byśmy chcieli zrobić okienko dialogowe, które
+nie zawiera jednego elementu. np guzika "noButton". W ten sposób nie musimy tworzyć nowego obiektu a jedynie pozmieniać skrypt tak aby nie został ten konkretny element wyświetlony. Do tego służy SetActive(false). Program w ten sposób działa szybciej i efektowniej niż podczas tworzenia i usuwania obiektów. Takim "statkiem matką" w tym przykładzie jest klasa "ModalPanel".
+
+Skrypty ,które zazwyczaj tego używają u mnie mają w nazwie "Test...".
+
+Po zaakceptowaniu wyzwania włącza nam się obiekt panel "Fight Panel" za pomocą metody "StartFight()" z klasy "FightPanel".
+Na samym początku są wybierane karty z PartyPanel i z przesłanego background (o którym była mowa wcześniej) i robione są z nich kopie. Tym kopią ustawiamy jako rodzica kolejne obiekty będące już w
+odpowiedniej liście List<GameObject> oznaczające pola na polu walki.
+To były przygotowania a teraz koncepcja walki.
+Gracz jak i komputer mają maksymalnie 4 pola. Jeśli nie ma przeciwnik karty to otrzymujemy punkt i tak na odwrót. Gdy oboje gracze mają karty to wyciągane są z nich parametry i toczy sie walka
+na regułach zaznaczonych w kodzie. Kto wygrał a kto przegrał i czy był remis zaznaczane jest za pomocą zmiany kolorów obiektów w liście.
+Wygrana walki skutkuje zmianą tagu aktualnego pola(field) na "Your Field" i jest uruchamiany skrypt "ChangerTagsScript". Dzięki temu odblokowywane są kolejne pola dla gracza ,gdzie może toczyć
+pojedynki oraz zaczynają się generować surowce z tego pola co kolejną turę. Ponadto walka zabiera dwie tury a generowane są surowce jak za jeden.
+
+Ważnym elementem jest obiekt o nazwie "Manager". Jest on pośrednikiem między klasami typu "ModalPanel" a "TestModalPanel". Organizuje on do jakich elementów typu GameObject zostają
+przesyłane zmienne np . Sprite (wygląd okienka). 
+Manager ma jako komponenty klasy: "InstructionCardPanel", "BarracksPanel", "ModalPanel", "MenagerOfPlayer". Podobne działanie mają jak ta opisywana wyżej.
+"MenagerOfPlayer" zajmuje się surowcami dla gracza i ich generacją. Klasą bezpośrednio powiązaną do niej jest klasa statyczna "PlayerSettings" która odgrywa role bazy danych.
+Została ona tak skonstruowana ,że nie ma być komponentem żadnego obiektu klasy GameObject ,gdyż ona ma być przenoszona między scenami (przy ładowaniu nowej sceny obiekty zostają usunięte
+w Unity z wyjątkiem takich z linijką "Object.DontDestroyOnLoad()" ale to powoduje komplikacje przy cofaniu się w scenach (jest jeszcze jedna metoda ale uznałem że ta jest lepsza)). Z tego powodu skoro
+jest to baza danych to jest static. Jest to jeden z lepszych sposobów na przesyłanie danych między scenami w Unity i zawiera jedynie zmienne ,które są istotne w innych scenach.
+
+Ostatnią z ważniejszych części gry są obiekty w obiekcie o nazwie "BarrackPanel". Jest to panel aby gracz mógł stworzyć i ulepszyć swoją drużynę. Po naciśnięciu guzika w grze "Koszary" wyświetla sie
+panel z koszarami, drużyną i ulepszeniami. Te naciśniecie powoduje wywołanie funkcji z klasy "TestBarracksPanel". Jej działanie jest takie same jak powyższe z "Test".
+
+Zaczynając od guzika ulepszenia (klasa "UpgradeBarracksButton"). Zasada jest prosta, po naciśnięciu zwiększamy wartość zmiennej "levelOfUpgrade", a ona jest przesyłana do Paneli z kartami
+zwiększając szanse na zdobycie, podczas tworzenia, kart lepszej,z bardziej unikatową jednostką .Unikatowość jest zaznaczona kolorem tła danej karty a także ma znaczenie podklasy reprezentującej
+wiek z której pochodzi. Karta o kolorze białym znaczy erę antyczności itd;
+Za obiekty o nazwie "BarracsPanel" i "PartyPanel" odpowiada klasa "ScrollCardsList". Ma ona za zadanie tworzyć i przesyłać karty(klasy "CardPanel") na podstawie List<CharacterClass> listInThisContainer.
+Osoba pracująca w programie Unity jako parametry ,które musi przesłać aby stworzyć kartę, musi jedynie podać nazwę klasy i level do tej listy. Resztą zajmuje się program który losowo
+dobiera parametry kart według ustalonych schematów aby było łatwo i wygodnie tworzyć nowe pola(field). Istotnym elementem jest ,że kod został napisany w taki sposób aby elementy z tej listy były
+połączone z obiektami(kartami) dołączonymi jako dzieci "BarracsPanel" lub "PartyPanel" za pomocą nazwy i indeksów. Ułatwia to wyszukiwanie elementu (zarządzanie elementem) ,który chcemy usunąć lub przenieść do innego miejsca.
+
+"CardPanel" jest klasą odpowiedzialną za nadawanie czystym kartom parametrów, wyglądu itd. W zależności od tego jakie kryteria dostanie od programisty bądź programu.
+Elementami wartymi do wytłumaczenia w tej klasie są linijki kodu typu
+Mage mage = new Mage();
+mage.ChangerParamets(levelOfTheUpgrade);
+mage.Setup(textName, textHealthPoints, textPower, textMagicPower, textArmour, textChanceToCriticalAttack, textLevel, textRarity);
+Moja koncepcja podczas tworzenia gry zakładała ,że skoro Unity posługuje się na każdym kroku klasą GameObject a komponenty są na drugim miejscu to najwygodniej będzie tworzenie kopii
+obiektów z klasy GameObject, ustawienie im rodzica a potem się nimi posługiwanie. Jest to o wiele łatwiejsze też dla osób ,które w Unity nie zajmują sie programowaniem a np. artystów od grafiki.
+W ten sposób (mimo że każda karta ma w sobie np. Mage mage = new Mage() to) wolałem sie posługiwać obiektami i im zmieniać wartości. Jeśli będę chciał coś zmienić w karcie to już nie muszę
+odwoływać się komponentu skryptu a jedynie do obiektów powiązanych.
+
+Kolejnym etapem jest opisanie klas dających parametry kartom.
+Klasą( klasą w kodzie) bazową dla każdej klasy postaci jest "Base". Jest to klasa abstrakcyjna aby przez przypadek nie stworzyć nowego obiektu klasy "Base". Zawiera ona w sobie wszystkie
+niezbędne parametry jakie karty muszą mieć i nieco ponadto ,gdyby gra nieco się rozwinęła. Dziedziczą po niej klasy takie jak "Mage", "Warrior", "Archer". Te klasy nie są zbytnio rozbudowane ale maja w
+sobie informacje jak "levelOfTheUmpage" działa na daną postać. "levelOfTheUmpage" jest skutkiem ulepszenia Paneli za pomocą "UpgradeBarracksButton" o którym pisałem wcześniej.
+
+Są jeszcze pełno mniejszych klas o których nie napisałem, które mają proste zadania i są duplikowane do różnych elementów.
+Często mają związek z technologią Unity i są łatwe do zrozumienia więc pominę opisywanie potrzeby ich tworzenia.
+Starałem sie także opisywać  w komentarzach elementy zrozumiałe głównie dla użytkowników unity aby nie zmuszać sprawdzjących do szukania po internecie.
+
+W "wstępnym opisie" zostały opisane jeszcze kilka rzeczy o ,których tu nie wspomniałem. Zaczynając:
+*Akcja gry będzie się działa na kontynencie zamieszkałym przez różne państwa/drużyny jednostek rządzących terytorium na "przestrzeni wieków".
+Podczas awansowania jednostki na maksymalny, piąty poziom awans zależy od obecnej Tury jaką ma gracz. Czym dalsza tura tym więcej bonusów otrzymuje karta.
+Działanie jak mechanizm działa jest w klasie "UpgradeLevelButton".  Dodatkowo kolor za postacią oznacza ere z jakiej pochodzi dana jednostka.
+
+*Jednostki w drużynie nie są ustalone, można je wymieniać z tymi już posiadanymi w koszarach (wcześniej zakupionymi za pomocą rekrutacji).
+*Ilość jednostek możliwych do kupienia nie jest ograniczona i mogą one przesiadywać w koszarach.
+*Jednostką można zwiększać poziom za pomocą surowca/energii dzięki czemu zwiększamy jej statystyki odpowiednie dla danej klasy jednostki.
+*Jednostki będą miały takie parametry jak level , klasa i parametry jak np. siła. które będziemy mogli zmieniać po wykonaniu pewnej czynności jak wykupienie kolejnego poziomu dla jednostki.
+*Przewidywane są poziomy trudności. Są one wybierane na samym początku gry.
+Zaprezentowane zostało to na filmiku.
+
+*Kupowane za pomocą rekrutacji są dołączane do naszej drużyny złożonej już na samym początku z pierwszej unikalnej jednostki.
+Jak wyżej z tą różnicą że najpierw są wysyłane do koszar. Drużyna jest ograniczona do 4 jednostek więc błedem było skazywać gracza na przesówanie jednostek
+najpierw z drużyny do koszar aby ustąpić miejsca rekrutowanej jednostce.
+
+*Każdy poziom będzie zwiększał parametry jednostek przeciwnika adekwatnie do wybranego poziomu trudności lub obniżał nasz przychód z ziem i statystyki naszych bohaterów.
+Z małą poprawką. W zależności od poziomu gry na samym początku gracz dostaje inne surowce początkowe oraz są inne poziomy siły przeciwników( jest zmieniona szansa na silniejszą jednostkę).
+
+W grze używane są interfejsy, głównie w znaczeniu informacyjnym .Że dany obiekt ma działać na kliknięcie myszy przez użytkownika i warto to zaznaczyć na początku pisania klasy która ma być komponentem obiektu.
+...IPointerClickHandler
+....
+public void OnPointerClick(PointerEventData eventData){
+...
+
+W programie często używałem zasady hermetyzacji. Czasami elementy z pozoru ,które nie powinny być publiczne są tak pozostawione ,gdyż są wykorzystywane przez obiekty w Unity z zewnątrz.
+Aby ułatwić prace osobą które by chciały wykorzystać elementy już stworzone i je modyfikować.
+
+Na tym kończy się opis końcowy i życze wytrwałości przy czytaniu kodu.
+Dziękuje.
